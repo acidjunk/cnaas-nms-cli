@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cnaas-nms-cli"
+version = "0.1.0"
+description = "A modern CLI for managing a CNaaS-NMS deployment."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "acidjunk" }]
+keywords = ["cnaas", "nms", "network", "cli", "typer"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Networking",
+]
+dependencies = [
+    "cnaas-nms-api-client>=0.1.2",
+    "typer>=0.12",
+    "rich>=13",
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "httpx",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "pytest-mock>=3",
+]
+dev = [
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+cnaas = "cnaas_cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cnaas_cli"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+# B008: Typer requires typer.Option/Argument as default values.
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
