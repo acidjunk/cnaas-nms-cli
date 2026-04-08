@@ -48,10 +48,10 @@ jobs:
           uv pip install --python venv/bin/python -e ".[test,dev]"
 
       - name: Lint
-        run: uv run --python venv/bin/python ruff check src tests
+        run: venv/bin/ruff check src tests
 
       - name: Test
-        run: uv run --python venv/bin/python pytest -q
+        run: venv/bin/pytest -q
 
       - name: Build sdist + wheel
         run: uv build

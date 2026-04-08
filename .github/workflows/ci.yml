@@ -33,7 +33,7 @@ jobs:
           uv pip install --python venv/bin/python -e ".[dev]"
 
       - name: Run ruff
-        run: uv run --python venv/bin/python ruff check src tests
+        run: venv/bin/ruff check src tests
 
   test:
     name: Test (Python ${{ matrix.python-version }})
@@ -60,7 +60,7 @@ jobs:
           uv pip install --python venv/bin/python -e ".[test]"
 
       - name: Run pytest
-        run: uv run --python venv/bin/python pytest -q --cov=cnaas_cli --cov-report=term-missing
+        run: venv/bin/pytest -q --cov=cnaas_cli --cov-report=term-missing
 
   build:
     name: Build wheel
