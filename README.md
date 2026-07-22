@@ -216,6 +216,8 @@ cnaas devices create --help
 | `init <id> --hostname --device-type` | Trigger ZTP/init                                     |
 | `init-check <id> --hostname --device-type` | Pre-flight check before init                   |
 | `sync [--hostname/--group/--device-type/--all] [--dry-run] [--force] [--auto-push] [--resync]` | Push (or compute) configuration |
+| `sync-hostname <hostname> [--dry-run] [--force] [--auto-push] [--resync] [--confirm-mode N]` | Sync a single device with commit-confirm support (CNaaS 1.8+) |
+| `lldp <hostname> [--detail]`     | Show LLDP neighbors discovered on a device (CNaaS 1.8+) |
 | `generate-config <hostname>`     | Render the candidate config from templates              |
 | `running-config <hostname>`      | Pull the live config off the device                     |
 
@@ -252,6 +254,7 @@ cnaas devices create --help
 | `list <hostname>`             | List interfaces on a device                   |
 | `status <hostname>`           | Show operational interface status             |
 | `set-status <hostname>`       | Bounce-down/bounce-up selected interfaces (templated) |
+| `export <hostname> [--uplinks] [--downlinks] [--descriptions]` | Export a device's interface configuration (CNaaS 1.8+) |
 
 ### `cnaas firmware`
 
@@ -259,8 +262,10 @@ cnaas devices create --help
 | -------------------------------------------------- | --------------------------------- |
 | `list`                                             | List all firmware images          |
 | `show <filename>`                                  | Show one image                    |
-| `download --url --sha1 --filename [--no-verify-tls]` | Download to the CNaaS server    |
+| `download --url --checksum [--algorithm sha1] --filename [--no-verify-tls]` | Download to the CNaaS server |
 | `delete <filename>`                                | Delete an image                   |
+| `set-default <filename>`                           | Mark an image as the default for upgrades (CNaaS 1.8+) |
+| `upgrade-check --group <group>`                    | Check upgrade eligibility for a group (CNaaS 1.8+) |
 | `upgrade --url [--hostname / --group] [--filename] [--start-at] [--download] [--activate] [--pre-flight] [--post-flight] [--reboot]` | Trigger an upgrade |
 
 ### `cnaas jobs`
@@ -419,7 +424,9 @@ cached AuthenticatedClient, and isolates the persistent config file under a
 `tmp_path` `XDG_CONFIG_HOME`. Each test stubs the specific
 `sync_detailed` function it expects to be called and asserts on its arguments.
 
-There are **60 tests** at the moment, covering every command plus error paths
+It targets **CNaaS-NMS 1.8.0** via `cnaas-nms-api-client >= 0.2.0`.
+
+There are **67 tests** at the moment, covering every command plus error paths
 (401 → exit 1 + auth hint, missing config in non-TTY → exit 1, validation
 errors on `sync` / `firmware upgrade`).
 

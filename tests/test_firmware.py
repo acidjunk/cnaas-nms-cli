@@ -37,14 +37,15 @@ def test_download(runner, cli_app, fake_client, monkeypatch):
         [
             "firmware", "download",
             "--url", "https://example.test/junos.tgz",
-            "--sha1", "abc123",
+            "--checksum", "abc123",
+            "--algorithm", "sha256",
             "--filename", "junos.tgz",
         ],
     )
     assert result.exit_code == 0, result.stdout
     body = mock.call_args.kwargs["body"].to_dict()
     assert body["url"] == "https://example.test/junos.tgz"
-    assert body["sha1"] == "abc123"
+    assert body["checksum"] == {"algorithm": "sha256", "checksum": "abc123"}
     assert body["filename"] == "junos.tgz"
 
 
@@ -82,4 +83,31 @@ def test_upgrade(runner, cli_app, fake_client, monkeypatch):
 
 def test_upgrade_requires_target(runner, cli_app, fake_client):
     result = runner.invoke(cli_app, ["firmware", "upgrade", "--url", "https://example.test/junos.tgz"])
+    assert result.exit_code != 0
+
+
+def test_set_default(runner, cli_app, fake_client, monkeypatch):
+    mock = stub_endpoint(
+        monkeypatch,
+        "cnaas_cli.commands.firmware.post_firmware_set_default_api.sync_detailed",
+        FakeResponse.ok({"status": "success"}),
+    )
+    result = runner.invoke(cli_app, ["firmware", "set-default", "junos.tgz"])
+    assert result.exit_code == 0, result.stdout
+    assert mock.call_args.args[0] == "junos.tgz"
+
+
+def test_upgrade_check(runner, cli_app, fake_client, monkeypatch):
+    mock = stub_endpoint(
+        monkeypatch,
+        "cnaas_cli.commands.firmware.post_firmware_upgradecheck_api.sync_detailed",
+        FakeResponse.ok({"status": "success"}),
+    )
+    result = runner.invoke(cli_app, ["firmware", "upgrade-check", "--group", "core"])
+    assert result.exit_code == 0, result.stdout
+    assert mock.call_args.kwargs["body"].to_dict()["group"] == "core"
+
+
+def test_upgrade_check_requires_group(runner, cli_app, fake_client):
+    result = runner.invoke(cli_app, ["firmware", "upgrade-check"])
     assert result.exit_code != 0

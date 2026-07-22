@@ -7,15 +7,21 @@ from cnaas_nms_api_client.api.device import (
     delete_device_by_id_api,
     get_device_by_hostname_api,
     get_device_generate_config_api,
+    get_device_lldp_neighbors_api,
+    get_device_lldp_neighbors_detail_api,
     get_device_running_config_api,
     post_device_api,
 )
 from cnaas_nms_api_client.api.device_init import post_device_init_api
 from cnaas_nms_api_client.api.device_initcheck import post_device_init_check_api
-from cnaas_nms_api_client.api.device_syncto import post_device_sync_api
+from cnaas_nms_api_client.api.device_syncto import (
+    post_device_sync_api,
+    post_device_sync_hostname_api,
+)
 from cnaas_nms_api_client.api.devices import get_devices_api
 from cnaas_nms_api_client.models.delete_devcie import DeleteDevcie
 from cnaas_nms_api_client.models.device import Device
+from cnaas_nms_api_client.models.device_hostname_sync import DeviceHostnameSync
 from cnaas_nms_api_client.models.device_init import DeviceInit
 from cnaas_nms_api_client.models.device_initcheck import DeviceInitcheck
 from cnaas_nms_api_client.models.device_sync import DeviceSync
@@ -195,6 +201,48 @@ def sync_devices(
         response = post_device_sync_api.sync_detailed(client=client, body=body)
         data = parse_response(response)
     print_success("Sync job submitted.")
+    print_json(data)
+
+
+@app.command("sync-hostname")
+def sync_hostname(
+    hostname: str = typer.Argument(..., help="Hostname of the device to sync."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Don't push changes; only compute the diff."),
+    force: bool = typer.Option(False, "--force", help="Force sync even if device looks in-sync."),
+    auto_push: bool = typer.Option(False, "--auto-push", help="Automatically push the diff after dry-run."),
+    resync: bool = typer.Option(False, "--resync", help="Treat current config as untrusted and re-sync."),
+    confirm_mode: int | None = typer.Option(
+        None, help="Commit-confirm mode: 0=off, 1=confirm, 2=confirm+auto-rollback (CNaaS 1.8+)."
+    ),
+) -> None:
+    """Start a configuration sync to a single device by hostname (CNaaS 1.8+)."""
+    optional: dict[str, object] = {
+        "dry_run": dry_run or None,
+        "force": force or None,
+        "auto_push": auto_push or None,
+        "resync": resync or None,
+        "confirm_mode": confirm_mode,
+    }
+    body = DeviceHostnameSync(**{k: v for k, v in optional.items() if v is not None})
+    client = build_client()
+    with handle_api_call(f"sync device {hostname}"):
+        response = post_device_sync_hostname_api.sync_detailed(hostname, client=client, body=body)
+        data = parse_response(response)
+    print_success(f"Sync job for {hostname} submitted.")
+    print_json(data)
+
+
+@app.command("lldp")
+def lldp_neighbors(
+    hostname: str = typer.Argument(..., help="Hostname of the device."),
+    detail: bool = typer.Option(False, "--detail", help="Include full LLDP neighbor details."),
+) -> None:
+    """Show the LLDP neighbors discovered on a device (CNaaS 1.8+)."""
+    client = build_client()
+    endpoint = get_device_lldp_neighbors_detail_api if detail else get_device_lldp_neighbors_api
+    with handle_api_call(f"fetch LLDP neighbors for {hostname}"):
+        response = endpoint.sync_detailed(hostname, client=client)
+        data = parse_response(response)
     print_json(data)
 
 

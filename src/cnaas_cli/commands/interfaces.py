@@ -5,6 +5,7 @@ from __future__ import annotations
 import typer
 from cnaas_nms_api_client.api.device import (
     get_interface_api,
+    get_interface_export_api,
     get_interface_status_api,
     put_interface_status_api,
 )
@@ -36,6 +37,27 @@ def interface_status(
     client = build_client()
     with handle_api_call(f"get interface status for {hostname}"):
         response = get_interface_status_api.sync_detailed(hostname, client=client)
+        data = parse_response(response)
+    print_json(data)
+
+
+@app.command("export")
+def export_interfaces(
+    hostname: str = typer.Argument(..., help="Hostname of the device."),
+    uplinks: bool = typer.Option(False, "--uplinks", help="Include uplink interfaces in the export."),
+    downlinks: bool = typer.Option(False, "--downlinks", help="Include downlink interfaces in the export."),
+    descriptions: bool = typer.Option(False, "--descriptions", help="Include interface descriptions."),
+) -> None:
+    """Export a device's interface configuration (CNaaS 1.8+)."""
+    client = build_client()
+    with handle_api_call(f"export interfaces on {hostname}"):
+        response = get_interface_export_api.sync_detailed(
+            hostname,
+            client=client,
+            include_uplinks=uplinks,
+            include_downlinks=downlinks,
+            include_descriptions=descriptions,
+        )
         data = parse_response(response)
     print_json(data)
 
