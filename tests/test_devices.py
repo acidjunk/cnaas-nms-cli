@@ -153,6 +153,45 @@ def test_running_config(runner, cli_app, fake_client, monkeypatch):
     assert result.exit_code == 0
 
 
+def test_sync_hostname(runner, cli_app, fake_client, monkeypatch):
+    mock = stub_endpoint(
+        monkeypatch,
+        "cnaas_cli.commands.devices.post_device_sync_hostname_api.sync_detailed",
+        FakeResponse.ok({"status": "success", "job_id": 9}),
+    )
+    result = runner.invoke(
+        cli_app,
+        ["devices", "sync-hostname", "core-01", "--dry-run", "--confirm-mode", "2"],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert mock.call_args.args[0] == "core-01"
+    body = mock.call_args.kwargs["body"].to_dict()
+    assert body["dry_run"] is True
+    assert body["confirm_mode"] == 2
+
+
+def test_lldp(runner, cli_app, fake_client, monkeypatch):
+    mock = stub_endpoint(
+        monkeypatch,
+        "cnaas_cli.commands.devices.get_device_lldp_neighbors_api.sync_detailed",
+        FakeResponse.ok({"data": {"neighbors": []}}),
+    )
+    result = runner.invoke(cli_app, ["devices", "lldp", "core-01"])
+    assert result.exit_code == 0, result.stdout
+    assert mock.call_args.args[0] == "core-01"
+
+
+def test_lldp_detail(runner, cli_app, fake_client, monkeypatch):
+    mock = stub_endpoint(
+        monkeypatch,
+        "cnaas_cli.commands.devices.get_device_lldp_neighbors_detail_api.sync_detailed",
+        FakeResponse.ok({"data": {"neighbors": []}}),
+    )
+    result = runner.invoke(cli_app, ["devices", "lldp", "core-01", "--detail"])
+    assert result.exit_code == 0, result.stdout
+    assert mock.call_args.args[0] == "core-01"
+
+
 def test_devices_error_path(runner, cli_app, fake_client, monkeypatch):
     stub_endpoint(
         monkeypatch,

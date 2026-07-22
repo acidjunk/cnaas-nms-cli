@@ -34,3 +34,20 @@ def test_set_status(runner, cli_app, fake_client, monkeypatch):
     )
     result = runner.invoke(cli_app, ["interfaces", "set-status", "core-01"])
     assert result.exit_code == 0
+
+
+def test_export(runner, cli_app, fake_client, monkeypatch):
+    mock = stub_endpoint(
+        monkeypatch,
+        "cnaas_cli.commands.interfaces.get_interface_export_api.sync_detailed",
+        FakeResponse.ok({"data": {"interfaces": []}}),
+    )
+    result = runner.invoke(
+        cli_app,
+        ["interfaces", "export", "core-01", "--uplinks", "--descriptions"],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert mock.call_args.args[0] == "core-01"
+    assert mock.call_args.kwargs["include_uplinks"] is True
+    assert mock.call_args.kwargs["include_downlinks"] is False
+    assert mock.call_args.kwargs["include_descriptions"] is True

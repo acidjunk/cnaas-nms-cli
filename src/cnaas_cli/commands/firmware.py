@@ -8,10 +8,14 @@ from cnaas_nms_api_client.api.firmware import (
     get_firmware_api,
     get_firmware_image_api,
     post_firmware_api,
+    post_firmware_set_default_api,
     post_firmware_upgrade_api,
+    post_firmware_upgradecheck_api,
 )
+from cnaas_nms_api_client.models.firmware_checksum import FirmwareChecksum
 from cnaas_nms_api_client.models.firmware_download import FirmwareDownload
 from cnaas_nms_api_client.models.firmware_upgrade import FirmwareUpgrade
+from cnaas_nms_api_client.models.firmware_upgradecheck import FirmwareUpgradecheck
 
 from ..client import build_client
 from ..errors import handle_api_call, parse_response
@@ -45,12 +49,20 @@ def show_firmware(
 @app.command("download")
 def download_firmware(
     url: str = typer.Option(..., help="HTTP(S) URL to download the image from."),
-    sha1: str = typer.Option(..., help="Expected SHA1 checksum of the file."),
+    checksum: str = typer.Option(..., help="Expected checksum of the file."),
+    algorithm: str = typer.Option(
+        "sha1", help="Checksum algorithm (e.g. sha1, sha256, md5) — CNaaS 1.8+."
+    ),
     filename: str = typer.Option(..., help="Filename to store the firmware image as."),
     verify_tls: bool = typer.Option(True, "--verify-tls/--no-verify-tls", help="Verify TLS when downloading."),
 ) -> None:
     """Download a firmware image to the CNaaS server."""
-    body = FirmwareDownload(url=url, sha1=sha1, filename=filename, verify_tls=verify_tls)
+    body = FirmwareDownload(
+        url=url,
+        checksum=FirmwareChecksum(algorithm=algorithm, checksum=checksum),
+        filename=filename,
+        verify_tls=verify_tls,
+    )
     client = build_client()
     with handle_api_call(f"download firmware {filename}"):
         response = post_firmware_api.sync_detailed(client=client, body=body)
@@ -69,6 +81,32 @@ def delete_firmware(
         response = delete_firmware_image_api.sync_detailed(filename, client=client)
         parse_response(response)
     print_success(f"Firmware {filename} deleted.")
+
+
+@app.command("set-default")
+def set_default_firmware(
+    filename: str = typer.Argument(..., help="Firmware image filename to mark as default."),
+) -> None:
+    """Mark a firmware image as the default for new upgrades (CNaaS 1.8+)."""
+    client = build_client()
+    with handle_api_call(f"set default firmware {filename}"):
+        response = post_firmware_set_default_api.sync_detailed(filename, client=client)
+        data = parse_response(response)
+    print_success(f"Firmware {filename} set as default.")
+    print_json(data)
+
+
+@app.command("upgrade-check")
+def upgrade_check(
+    group: str = typer.Option(..., help="Device group to check for firmware upgrade eligibility."),
+) -> None:
+    """Check whether devices in a group are eligible for a firmware upgrade (CNaaS 1.8+)."""
+    body = FirmwareUpgradecheck(group=group)
+    client = build_client()
+    with handle_api_call("run firmware upgrade check"):
+        response = post_firmware_upgradecheck_api.sync_detailed(client=client, body=body)
+        data = parse_response(response)
+    print_json(data)
 
 
 @app.command("upgrade")
